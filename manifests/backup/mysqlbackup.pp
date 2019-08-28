@@ -1,8 +1,4 @@
-# @summary
-#   Manage the mysqlbackup client.
-#
-# @api private
-#
+# See README.me for usage.
 class mysql::backup::mysqlbackup (
   $backupuser         = '',
   $backuppassword     = '',
@@ -13,7 +9,6 @@ class mysql::backup::mysqlbackup (
   $backupdirgroup     = $mysql::params::root_group,
   $backupcompress     = true,
   $backuprotate       = 30,
-  $backupmethod       = '',
   $ignore_events      = true,
   $delete_before_dump = false,
   $backupdatabases    = [],
@@ -30,7 +25,7 @@ class mysql::backup::mysqlbackup (
 
   mysql_user { "${backupuser}@localhost":
     ensure        => $ensure,
-    password_hash => mysql::password($backuppassword),
+    password_hash => mysql_password($backuppassword),
     require       => Class['mysql::server::root_password'],
   }
 
@@ -63,20 +58,6 @@ class mysql::backup::mysqlbackup (
     require    => Mysql_user["${backupuser}@localhost"],
   }
 
-  if $::osfamily == 'RedHat' and $::operatingsystemmajrelease == '5' {
-    package {'crontabs':
-      ensure => present,
-    }
-  } elsif $::osfamily == 'RedHat' {
-    package {'cronie':
-      ensure => present,
-    }
-  } elsif $::osfamily != 'FreeBSD' {
-    package {'cron':
-      ensure => present,
-    }
-  }
-
   cron { 'mysqlbackup-weekly':
     ensure  => $ensure,
     command => 'mysqlbackup backup',
@@ -107,7 +88,7 @@ class mysql::backup::mysqlbackup (
       'password'               => $backuppassword,
     }
   }
-  $options = mysql::normalise_and_deepmerge($default_options, $mysql::server::override_options)
+  $options = mysql_deepmerge($default_options, $mysql::server::override_options)
 
   file { 'mysqlbackup-config-file':
     path    => '/etc/mysql/conf.d/meb.cnf',
@@ -115,10 +96,12 @@ class mysql::backup::mysqlbackup (
     mode    => '0600',
   }
 
-  file { $backupdir:
+  file { 'mysqlbackupdir':
     ensure => 'directory',
+    path   => $backupdir,
     mode   => $backupdirmode,
     owner  => $backupdirowner,
     group  => $backupdirgroup,
   }
+
 }

@@ -1,8 +1,4 @@
-# @summary
-#   Params class.
-#
-# @api private
-#
+# Private class: See README.md.
 class mysql::params {
 
   $manage_config_file     = true
@@ -18,9 +14,6 @@ class mysql::params {
   $client_package_manage  = true
   $create_root_user       = true
   $create_root_my_cnf     = true
-  $create_root_login_file = false
-  $login_file             = undef
-  $exec_path              = ''
   # mysql::bindings
   $bindings_enable             = false
   $java_package_ensure         = 'present'
@@ -49,18 +42,12 @@ class mysql::params {
           } else {
             $provider = 'mysql'
           }
-          $python_package_name = 'MySQL-python'
         }
         /^(RedHat|CentOS|Scientific|OracleLinux)$/: {
           if versioncmp($::operatingsystemmajrelease, '7') >= 0 {
             $provider = 'mariadb'
           } else {
             $provider = 'mysql'
-          }
-          if versioncmp($::operatingsystemmajrelease, '8') >= 0 {
-            $python_package_name = 'python3-PyMySQL'
-          } else {
-            $python_package_name = 'MySQL-python'
           }
         }
         default: {
@@ -102,6 +89,7 @@ class mysql::params {
       $java_package_name       = 'mysql-connector-java'
       $perl_package_name       = 'perl-DBD-MySQL'
       $php_package_name        = 'php-mysql'
+      $python_package_name     = 'MySQL-python'
       $ruby_package_name       = 'ruby-mysql'
       $client_dev_package_name = undef
     }
@@ -133,8 +121,7 @@ class mysql::params {
           }
         }
         default: {
-          fail(translate('Unsupported platform: puppetlabs-%{module_name} currently doesn\'t support %{os}.',
-              {'module_name' => $module_name, 'os' => $::operatingsystem }))
+          fail("Unsupported platform: puppetlabs-${module_name} currently doesn't support ${::operatingsystem}")
         }
       }
       $config_file         = '/etc/my.cnf'
@@ -185,16 +172,15 @@ class mysql::params {
       } else {
         $provider = 'mysql'
       }
+
       if $provider == 'mariadb' {
         $client_package_name     = 'mariadb-client'
         $server_package_name     = 'mariadb-server'
-        $server_service_name     = 'mariadb'
         $client_dev_package_name = 'libmariadbclient-dev'
         $daemon_dev_package_name = 'libmariadbd-dev'
       } else {
         $client_package_name     = 'mysql-client'
         $server_package_name     = 'mysql-server'
-        $server_service_name     = 'mysql'
         $client_dev_package_name = 'libmysqlclient-dev'
         $daemon_dev_package_name = 'libmysqld-dev'
       }
@@ -207,6 +193,7 @@ class mysql::params {
       $pidfile                 = '/var/run/mysqld/mysqld.pid'
       $root_group              = 'root'
       $mysql_group             = 'adm'
+      $server_service_name     = 'mysql'
       $socket                  = '/var/run/mysqld/mysqld.sock'
       $ssl_ca                  = '/etc/mysql/cacert.pem'
       $ssl_cert                = '/etc/mysql/server-cert.pem'
@@ -215,54 +202,46 @@ class mysql::params {
       # mysql::bindings
       $java_package_name   = 'libmysql-java'
       $perl_package_name   = 'libdbd-mysql-perl'
-      if  ($::operatingsystem == 'Ubuntu' and versioncmp($::operatingsystemrelease, '16.04') >= 0) or
-          ($::operatingsystem == 'Debian' and versioncmp($::operatingsystemrelease, '9') >= 0) {
-        $php_package_name = 'php-mysql'
-      } else {
-        $php_package_name = 'php5-mysql'
+      $php_package_name    = $::lsbdistcodename ? {
+        'xenial'           => 'php-mysql',
+        default            => 'php5-mysql',
       }
-
       $python_package_name = 'python-mysqldb'
       $ruby_package_name   = $::lsbdistcodename ? {
         'jessie'           => 'ruby-mysql',
         'stretch'          => 'ruby-mysql2',
         'trusty'           => 'ruby-mysql',
         'xenial'           => 'ruby-mysql',
-        'bionic'           => 'ruby-mysql2',
         default            => 'libmysql-ruby',
       }
     }
 
     'Archlinux': {
-      $daemon_dev_package_name = undef
-      $client_dev_package_name = undef
-      $includedir              = undef
-      $client_package_name     = 'mariadb-clients'
-      $server_package_name     = 'mariadb'
-      $basedir                 = '/usr'
-      $config_file             = '/etc/mysql/my.cnf'
-      $datadir                 = '/var/lib/mysql'
-      $log_error               = '/var/log/mysqld.log'
-      $pidfile                 = '/var/run/mysqld/mysqld.pid'
-      $root_group              = 'root'
-      $mysql_group             = 'mysql'
-      $server_service_name     = 'mysqld'
-      $socket                  = '/var/lib/mysql/mysql.sock'
-      $ssl_ca                  = '/etc/mysql/cacert.pem'
-      $ssl_cert                = '/etc/mysql/server-cert.pem'
-      $ssl_key                 = '/etc/mysql/server-key.pem'
-      $tmpdir                  = '/tmp'
+      $client_package_name = 'mariadb-clients'
+      $server_package_name = 'mariadb'
+      $basedir             = '/usr'
+      $config_file         = '/etc/mysql/my.cnf'
+      $datadir             = '/var/lib/mysql'
+      $log_error           = '/var/log/mysqld.log'
+      $pidfile             = '/var/run/mysqld/mysqld.pid'
+      $root_group          = 'root'
+      $mysql_group         = 'mysql'
+      $server_service_name = 'mysqld'
+      $socket              = '/var/lib/mysql/mysql.sock'
+      $ssl_ca              = '/etc/mysql/cacert.pem'
+      $ssl_cert            = '/etc/mysql/server-cert.pem'
+      $ssl_key             = '/etc/mysql/server-key.pem'
+      $tmpdir              = '/tmp'
       # mysql::bindings
-      $java_package_name       = 'mysql-connector-java'
-      $perl_package_name       = 'perl-dbd-mysql'
-      $php_package_name        = undef
-      $python_package_name     = 'mysql-python'
-      $ruby_package_name       = 'mysql-ruby'
+      $java_package_name   = 'mysql-connector-java'
+      $perl_package_name   = 'perl-dbd-mysql'
+      $php_package_name    = undef
+      $python_package_name = 'mysql-python'
+      $ruby_package_name   = 'mysql-ruby'
     }
 
     'Gentoo': {
       $client_package_name = 'virtual/mysql'
-      $includedir          = undef
       $server_package_name = 'virtual/mysql'
       $basedir             = '/usr'
       $config_file         = '/etc/mysql/my.cnf'
@@ -369,30 +348,6 @@ class mysql::params {
 
     default: {
       case $::operatingsystem {
-        'Alpine': {
-          $client_package_name = 'mariadb-client'
-          $server_package_name = 'mariadb'
-          $basedir             = '/usr'
-          $config_file         = '/etc/mysql/my.cnf'
-          $datadir             = '/var/lib/mysql'
-          $log_error           = '/var/log/mysqld.log'
-          $pidfile             = '/run/mysqld/mysqld.pid'
-          $root_group          = 'root'
-          $mysql_group         = 'mysql'
-          $server_service_name = 'mariadb'
-          $socket              = '/run/mysqld/mysqld.sock'
-          $ssl_ca              = '/etc/mysql/cacert.pem'
-          $ssl_cert            = '/etc/mysql/server-cert.pem'
-          $ssl_key             = '/etc/mysql/server-key.pem'
-          $tmpdir              = '/tmp'
-          $java_package_name   = undef
-          $perl_package_name   = 'perl-dbd-mysql'
-          $php_package_name    = 'php7-mysqlnd'
-          $python_package_name = 'py-mysqldb'
-          $ruby_package_name   = undef
-          $client_dev_package_name     = undef
-          $daemon_dev_package_name     = undef
-        }
         'Amazon': {
           $client_package_name = 'mysql'
           $server_package_name = 'mysql-server'
@@ -422,8 +377,7 @@ class mysql::params {
         }
 
         default: {
-          fail(translate('Unsupported platform: puppetlabs-%{module_name} currently doesn\'t support %{osfamily} or %{os}.',
-              {'module_name' => $module_name, 'os' => $::operatingsystem, 'osfamily' => $::osfamily}))
+          fail("Unsupported platform: puppetlabs-${module_name} currently doesn't support ${::osfamily} or ${::operatingsystem}")
         }
       }
     }
@@ -431,16 +385,11 @@ class mysql::params {
 
   case $::operatingsystem {
     'Ubuntu': {
-      # lint:ignore:only_variable_string
-      if versioncmp("${::operatingsystemmajrelease}", '14.10') > 0 {
-      # lint:endignore
+      if versioncmp($::operatingsystemmajrelease, '14.10') > 0 {
         $server_service_provider = 'systemd'
       } else {
         $server_service_provider = 'upstart'
       }
-    }
-    'Alpine': {
-      $server_service_provider = 'rc-service'
     }
     default: {
       $server_service_provider = undef
@@ -465,18 +414,12 @@ class mysql::params {
     },
     'mysqld-5.5'       => {
       'myisam-recover' => 'BACKUP',
-      'query_cache_limit'     => '1M',
-      'query_cache_size'      => '16M',
     },
     'mysqld-5.6'              => {
       'myisam-recover-options' => 'BACKUP',
-      'query_cache_limit'     => '1M',
-      'query_cache_size'      => '16M',
     },
     'mysqld-5.7'              => {
       'myisam-recover-options' => 'BACKUP',
-      'query_cache_limit'     => '1M',
-      'query_cache_size'      => '16M',
     },
     'mysqld'                  => {
       'basedir'               => $mysql::params::basedir,
@@ -490,6 +433,8 @@ class mysql::params {
       'max_connections'       => '151',
       'pid-file'              => $mysql::params::pidfile,
       'port'                  => '3306',
+      'query_cache_limit'     => '1M',
+      'query_cache_size'      => '16M',
       'skip-external-locking' => true,
       'socket'                => $mysql::params::socket,
       'ssl'                   => false,
@@ -514,6 +459,6 @@ class mysql::params {
 
   ## Additional graceful failures
   if $::osfamily == 'RedHat' and $::operatingsystemmajrelease == '4' and $::operatingsystem != 'Amazon' {
-    fail(translate('Unsupported platform: puppetlabs-%{module_name} only supports RedHat 5.0 and beyond.', {'module_name' => $module_name}))
+    fail("Unsupported platform: puppetlabs-${module_name} only supports RedHat 5.0 and beyond")
   }
 }

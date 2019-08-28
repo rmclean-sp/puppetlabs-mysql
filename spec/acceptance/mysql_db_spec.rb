@@ -3,33 +3,25 @@ require 'spec_helper_acceptance'
 describe 'mysql::db define' do
   describe 'creating a database' do
     let(:pp) do
-      <<-MANIFEST
-        class { 'mysql::server':
-          root_password => 'password',
-          service_enabled => 'true',
-          service_manage  => 'true',
-        }
+      <<-EOS
+        class { 'mysql::server': root_password => 'password' }
         mysql::db { 'spec1':
-          user            => 'root1',
-          password        => 'password',
+          user     => 'root1',
+          password => 'password',
         }
-      MANIFEST
+      EOS
     end
+    it_behaves_like "a idempotent resource"
 
-    it 'behaves idempotently' do
-      idempotent_apply(pp)
-    end
-
-    it 'Checking exit code and stdout' do
-      result = run_shell("mysql -e 'show databases;'")
-      expect(result.exit_code).to eq 0
-      expect(result.stdout).to match %r{^spec1$}
+    describe command("mysql -e 'show databases;'") do
+      its(:exit_status) { is_expected.to eq 0 }
+      its(:stdout) { is_expected.to match /^spec1$/ }
     end
   end
 
   describe 'creating a database with post-sql' do
     let(:pp) do
-      <<-MANIFEST
+      <<-EOS
         class { 'mysql::server': override_options => { 'root_password' => 'password' } }
         file { '/tmp/spec.sql':
           ensure  => file,
@@ -41,41 +33,33 @@ describe 'mysql::db define' do
           password => 'password',
           sql      => '/tmp/spec.sql',
         }
-      MANIFEST
+      EOS
     end
+    it_behaves_like "a idempotent resource"
 
-    it 'behaves idempotently' do
-      idempotent_apply(pp)
-    end
-
-    it 'Checking exit code and stdout' do
-      result = run_shell("mysql -e 'show tables;' spec2")
-      expect(result.exit_code).to eq 0
-      expect(result.stdout).to match %r{^table1$}
+    describe command("mysql -e 'show tables;' spec2") do
+      its(:exit_status) { is_expected.to eq 0 }
+      its(:stdout) { is_expected.to match /^table1$/ }
     end
   end
 
   describe 'creating a database with dbname parameter' do
-    let(:check_command) { ' | grep realdb' }
+    let(:check_command) { " | grep realdb" }
     let(:pp) do
-      <<-MANIFEST
+      <<-EOS
         class { 'mysql::server': override_options => { 'root_password' => 'password' } }
         mysql::db { 'spec1':
           user     => 'root1',
           password => 'password',
           dbname   => 'realdb',
         }
-      MANIFEST
+      EOS
     end
+    it_behaves_like "a idempotent resource"
 
-    it 'behaves idempotently' do
-      idempotent_apply(pp)
-    end
-
-    it 'Checking exit code and stdout' do
-      result = run_shell("mysql -e 'show databases;'")
-      expect(result.exit_code).to eq 0
-      expect(result.stdout).to match %r{^realdb$}
+    describe command("mysql -e 'show databases;'") do
+      its(:exit_status) { is_expected.to eq 0 }
+      its(:stdout) { is_expected.to match /^realdb$/ }
     end
   end
 end
