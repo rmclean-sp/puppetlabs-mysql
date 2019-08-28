@@ -44,11 +44,7 @@ class mysql::params {
           }
         }
         /^(RedHat|CentOS|Scientific|OracleLinux)$/: {
-          if versioncmp($::operatingsystemmajrelease, '7') >= 0 {
-            $provider = 'mariadb'
-          } else {
-            $provider = 'mysql'
-          }
+          $provider = 'mysql'
         }
         default: {
           $provider = 'mysql'
